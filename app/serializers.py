@@ -1,14 +1,46 @@
 from rest_framework import serializers
-from .models import Author
+from .models import Author, Book, Loan
 
-class AuthorSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(max_length=255)
+class AuthorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Author
+        fields = '__all__'
     
-    def create(self, validated_data):
-        return Author.objects.create(**validated_data)
+    def validate_name(self, value):
+        if not value[0].isupper():
+            raise serializers.ValidationError("Le nom doit commencer par une majuscule.")
+        return value
     
-    def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.save()
-        return instance
+class BookSerializer(serializers.ModelSerializer):
+    
+    is_borrowed_by_me = serializers.SerializerMethodField()
+    class Meta:
+        model = Book
+        fields = '__all__'
+    
+    def get_is_borrowed_by_me(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return Loan.objects.filter(book=obj, user=request.user, return_date__isnull=True).exists()
+        return False
+
+class LoanSeraializer(serializers.ModelSerializer):
+    class Meta:
+        model = Loan
+        fields = '__all__'
+        
+    def validate(self, data):
+        if self.instance is None and data.get("return_date"):
+            raise serializers.ValidationError("Impossible de créer un emprunt déjà retourné.")
+        
+        if self.instance is None:
+            existing_loan = Loan.objects.filter(book=data.get("book"), return_date__isnull=True)
+            
+            if existing_loan:
+                raise serializers.ValidationError("Ce livre est déjà emprunté.")
+            
+        if self.instance and data.get('return_date'):
+            if data['return_date'] < self.instance.borrow_date:
+                raise serializers.ValidationError("La date de retour doit être après la date d'emprunt.")
+        
+        return data

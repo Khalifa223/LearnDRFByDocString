@@ -24,5 +24,8 @@ class Loan(models.Model):
     borrow_date = models.DateField(auto_now_add=True)
     return_date = models.DateField(null=True, blank=True)
     
+    def status(self):
+        return "Retourné" if self.return_date else "En_cours"
+    
     def __str__(self):
         return f'{self.user.username} a emprunté {self.book.title}'
