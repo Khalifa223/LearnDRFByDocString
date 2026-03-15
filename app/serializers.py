@@ -11,8 +11,12 @@ class AuthorSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Le nom doit commencer par une majuscule.")
         return value
     
-class BookSerializer(serializers.ModelSerializer):
-    
+class BookCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = ['id', 'title', 'author']
+class BookListSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(read_only=True)
     is_borrowed_by_me = serializers.SerializerMethodField()
     class Meta:
         model = Book

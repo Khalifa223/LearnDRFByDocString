@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Author, Book, Loan
-from .serializers import AuthorSerializer, BookSerializer, LoanSeraializer
+from .serializers import AuthorSerializer, BookListSerializer, LoanSeraializer, BookCreateUpdateSerializer
 
 @api_view(['GET', 'POST'])
 def author_list_and_create(request):
@@ -48,6 +48,15 @@ def loan_list(request):
 
 @api_view(["GET"])
 def book_list(request):
-    books = Book.objects.all()
-    serializer = BookSerializer(books, many=True, context={'request': request})
-    return Response(serializer.data)
+    if request.method == "GET":
+        books = Book.objects.all()
+        serializer = BookListSerializer(books, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+    elif request.method == "POST":
+        serializer = BookCreateUpdateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
