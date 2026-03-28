@@ -24,6 +24,7 @@ class Loan(models.Model):
     borrow_date = models.DateField(auto_now_add=True)
     return_date = models.DateField(null=True, blank=True)
     
+    @property
     def status(self):
         return "Retourné" if self.return_date else "En_cours"
     

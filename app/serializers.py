@@ -28,7 +28,7 @@ class BookListSerializer(serializers.ModelSerializer):
             return Loan.objects.filter(book=obj, user=request.user, return_date__isnull=True).exists()
         return False
 
-class LoanSeraializer(serializers.ModelSerializer):
+class LoanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Loan
         fields = '__all__'
@@ -38,13 +38,10 @@ class LoanSeraializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Impossible de créer un emprunt déjà retourné.")
         
         if self.instance is None:
-            existing_loan = Loan.objects.filter(book=data.get("book"), return_date__isnull=True)
-            
-            if existing_loan:
+            if existing_loan := Loan.objects.filter(book=data.get("book"), return_date__isnull=True):
                 raise serializers.ValidationError("Ce livre est déjà emprunté.")
             
-        if self.instance and data.get('return_date'):
-            if data['return_date'] < self.instance.borrow_date:
+        if self.instance and data.get('return_date') and data['return_date'] < self.instance.borrow_date:
                 raise serializers.ValidationError("La date de retour doit être après la date d'emprunt.")
         
         return data
